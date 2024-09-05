@@ -4,13 +4,13 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"strings"
 )
 
 const CONS = "bcdfghjklmnpqrstvwxyz"
 const VOWS = "aeiou"
-const SYL = 4
 
 func randCons() byte {
 	return CONS[rand.IntN(len(CONS))]
@@ -30,9 +30,9 @@ func replaceAtIndex(in string, b byte, i int) string {
 	return string(out)
 }
 
-func genRandWord() string {
+func genRandWord(syl int) string {
 	op := ""
-	for i := 0; i <= rand.IntN(SYL-1)+2; i++ {
+	for i := 0; i <= syl; i++ {
 		switch rand.IntN(4) {
 		case 0:
 			op += string(rune(randCons()))
@@ -52,20 +52,60 @@ func genRandWord() string {
 	return op
 }
 
-func mutateWord(word string) string {
+func countVows(word string) int {
+	c := 0
+	for _, b := range []byte(word) {
+		if isVow(b) {
+			c++
+		}
+	}
+
+	return c
+}
+
+func fitness(word string) float64 {
+	num_vows := countVows(word)
+	length := len(word)
+	prob := float64(num_vows) / float64(length)
+
+	return float64(prob)
+}
+
+func compare(prob1 float64, prob2 float64) bool {
+	return math.Abs(0.5-prob1) < math.Abs(0.5-prob2)
+}
+
+func mutateChar(char byte) byte {
+	x := char
+	if isVow(x) {
+		for x == char {
+			x = randVow()
+		}
+	} else {
+		for x == char {
+			x = randCons()
+		}
+	}
+
+	return x
+}
+
+func mutateWord(word string, prob float64) string {
 	op := word
 	for i, b := range []byte(word) {
-		if isVow(b) {
-			op = replaceAtIndex(op, randVow(), i)
+		if rand.Float64() < prob {
+			x := mutateChar(b)
+			op = replaceAtIndex(op, x, i)
 		}
 	}
 
 	return op
 }
 
-func printWords(words []string) {
-	for _, word := range words {
-		fmt.Println(word)
+func printWords(words []string, moreWords []string) {
+	fmt.Println("GENERATED\t\tMUTATED")
+	for i := range len(words) {
+		fmt.Printf("%s\t\t%s\n", words[i], moreWords[i])
 	}
 }
 
@@ -74,18 +114,15 @@ func main() {
 	words := []string{}
 
 	for range 10 {
-		words = append(words, genRandWord())
+		words = append(words, genRandWord(4))
 	}
 
-	fmt.Println("GENERATED WORDS")
-	printWords(words)
 	mutations := []string{}
 
 	for _, word := range words {
-		mutations = append(mutations, mutateWord(word))
+		mutations = append(mutations, mutateWord(word, 0.3))
 	}
 
-	fmt.Println("\n\n\nMUTATED WORDS")
-	printWords(mutations)
+	printWords(words, mutations)
 
 }
