@@ -125,4 +125,10 @@ func main() {
 
 	printWords(words, mutations)
 
+	fitnesses := []float32{}
+
+	for _, word := range mutations {
+		fitnesses = append(fitnesses, float32(fitness(word)))
+	}
+
 }
